@@ -64,6 +64,10 @@ static __inline int account_data(struct __sk_buff *skb, uint32_t dir) {
     uint32_t* bytes;
 
 
+    if (count >= SAMPLES){
+        return TC_ACT_OK;
+    }
+
 
     void* data_end = (void*)(long)skb->data_end;
     void* data = (void*)(long)skb->data;
