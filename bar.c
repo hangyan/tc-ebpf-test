@@ -49,7 +49,7 @@ static void* BPF_FUNC(map_lookup_elem, void* map, const void* key);
 
 // The number of packets we want to sample and mark.
 #define SAMPLES 15
-int count = 0;
+
 
 struct bpf_elf_map acc_map __section("maps") = {
     .type = BPF_MAP_TYPE_ARRAY,
@@ -60,11 +60,23 @@ struct bpf_elf_map acc_map __section("maps") = {
 
 };
 
+struct bpf_elf_map config_map __section("maps") = {
+    .type = BPF_MAP_TYPE_HASH,
+    .size_key = sizeof(uint32_t),
+    .size_value = sizeof(uint32_t),
+    .pinning = PIN_GLOBAL_NS,
+    .max_elem = 5,
+
+};
+
 static __inline int account_data(struct __sk_buff *skb, uint32_t dir) {
     uint32_t* bytes;
 
+    uint32_t* count;
+    uint32_t count_key = 1;
+    count = map_lookup_elem(&config_map, &count_key);
 
-    if (count >= SAMPLES){
+    if (count && *count >= 15){
         return TC_ACT_OK;
     }
 
@@ -82,7 +94,12 @@ static __inline int account_data(struct __sk_buff *skb, uint32_t dir) {
         return TC_ACT_OK;
     iph = data + sizeof(*eth);
     bpf_debug("got packet id: %u\n", iph->id);
-    
+
+    if (count) {
+        uint32_t  new_count = *count +1;
+        bpf_map_update_elem(&config_map, &count_key, &new_count, BPF_ANY);
+    }
+
 
     bytes = map_lookup_elem(&acc_map, &dir);
     if (bytes)
@@ -100,6 +117,9 @@ int tc_ingress(struct __sk_buff* skb)
 __section("egress")
 int tc_egress(struct __sk_buff* skb)
 {
+    uint32_t  k = 1;
+    uint32_t v = 0;
+    bpf_map_update_elem(&config_map, &k, &v, BPF_NOEXIST);
     return account_data(skb, 1);
 }
 
