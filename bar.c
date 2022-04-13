@@ -60,6 +60,10 @@ struct bpf_elf_map acc_map __section("maps") = {
 
 };
 
+// use some hard coded values to reprensents configs
+// k --> v
+// key=0: sample type
+// key=1: FirstNSampleing v: actual packet count. Currently MAX=15
 struct bpf_elf_map config_map __section("maps") = {
     .type = BPF_MAP_TYPE_HASH,
     .size_key = sizeof(uint32_t),
@@ -93,7 +97,10 @@ static __inline int account_data(struct __sk_buff *skb, uint32_t dir) {
     if (data + sizeof(*eth) + sizeof(*iph) > data_end)
         return TC_ACT_OK;
     iph = data + sizeof(*eth);
-    bpf_debug("got packet id: %u\n", iph->id);
+    __u8 old_tos = iph->tos;
+    bpf_debug("got packet id: %u, tos: %u\n", iph->id, old_tos);
+
+
 
     if (count) {
         uint32_t  new_count = *count +1;
