@@ -60,6 +60,15 @@ struct bpf_elf_map acc_map __section("maps") = {
 
 };
 
+// merge:
+
+// // hardcoded configs
+   // key: 0 , value: sample type
+   //   0: first n
+   //   1: 1 out of N
+   //   2: interval
+   // key: 1 value: type specific paramter
+
 // use some hard coded values to reprensents configs
 // k --> v
 // key=0: sample type
